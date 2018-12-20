@@ -1,0 +1,78 @@
+\documentclass[11pt]{amsart}
+\usepackage{geometry}                % See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   % ... or a4paper or a5paper or ... 
+%\geometry{landscape}                % Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{epstopdf}
+\DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
+
+\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+\title{Brief Article}
+\author{The Author}
+%\date{}                                           % Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+\section{Mixture Modesls}
+Following Shalizi (ref here):  
+
+We say that the distribution $f$ is a mixture of $K$ component distributions $f_1, \dots, f_K$ if 
+\[ f(x) = \sum_{k=1}^K \lambda_k f_k(x; \theta_k) \] 
+where $\lambda_k$ are the mixing weights, such that $\lambda_k>0, \ \sum_k \lambda_k = 1$.  This means that the data can generated to the following procedure: 
+\begin{align*}
+Z &\sim \text{Multinomial}(\lambda_1, \dots, \lambda_K) \\
+X | Z &\sim f_{Z}
+\end{align*}
+where $Z$ is a discrete random variable that says which component $X$ is drawn from. 
+
+This is useful for record linkage using the FS approach because we assume there are two latent populations corresponding to matches $(M)$ and non-matches $(U)$, that are represented in the population of comparisons with proportions $p_M$ and $p_U = 1 - p_M$ respectively.  
+
+
+Given $(i,j) \in M$ or $ (i,j)\in U$, the comparison vector between two files $i$ and $j$ is
+\[ \gamma(i,j) \sim f_{k}, \hspace{10pt} k\in\{M,U\} \]
+
+
+Assuming independent samples, the log likelihood for a generic mixture model for observations $(x_1,\dots, x_n)$ is:
+\begin{align} 
+\ell(\theta) &= \sum_{i=1}^n \log f(x_i,\theta)  \\
+		&= \sum_{i=1}^n \log \sum_{k=1}^K \lambda_k f_k(x_i; \theta_k)  \label{eq:llh}
+\end{align}
+The overall parameter vector of the model is thus $\theta = (\lambda_1,\dots,\lambda_{K-1}, \theta_1, \theta_2, \dots, \theta_K)$.  
+
+In record linkage, $x_i \overset{i.i.d.}{\sim}X$ and $y_j  \overset{i.i.d.}{\sim} Y$, so $\gamma(x_i, y_j) \independent \gamma(x_{i'}, y_j)$ for all  $j, i'\neq i$, yet, $\gamma(x_i,y_j) $ may not be independent from $\gamma(x_i,y_{j'})$.  This gives the likelihood:
+
+%\[ likelihood here \] 
+
+\begin{equation} \ell(\theta) \end{equation}
+\subsection{Mixture Model Estimation}
+As shown in Shalizi (ref), maximizing the likelihood for a mixture model is like doing a weighted likelihood maximization, where the weight of each observation $x_i$ depends on the cluster.  This is seen by taking the derivative of \eqref{eq:llh} with respect to one parameter $\theta_j$,
+
+\begin{align*}
+\frac{\partial \ell}{\partial \theta_j} &= \sum_{i=1}^n \frac{1}{\sum_{k=1}^K\lambda_k f_k(x_i; \theta_k)} \lambda_j \frac{\partial f_j(x_i;\theta_j)}{\partial \theta_j} \\
+&= \sum_{i=1}^n \underbrace{\frac{\lambda_j f_j(x_i;\theta_j)}{\sum_{k=1}^K\lambda_k f_k(x_i; \theta_k)}}_{w_{ij}}  \frac{\partial \log f_j(x_i;\theta_j)}{\partial \theta_j} 
+\end{align*}
+
+The weight is the conditional probability that observation $i$ belongs to cluster $j$ :
+
+\[w_{ij} = \frac{\lambda_j f_j(x_i;\theta_j)}{\sum_{k=1}^K\lambda_k f_k(x_i; \theta_k)} = \frac{P(Z=j, X=x_i)}{P(X=x_i)}= P(Z=j | X=x_i)\] 
+
+So if we try to estimate the mixture model, we're doing weighted maximum likelihood, with weights given by the posterior cluster probabilities (which depend on parameters $\lambda_1,\dots,\lambda_K$ that we are trying to estimate).  The EM algorithm (ref here for Rubin, etc.) makes estimation possible: 
+\begin{enumerate}
+\item Start with guesses about the mixture components $\theta_1, \theta_2, \dots, \theta_K$ and the mixing weights $\lambda_1,\dots,\lambda_K$. 
+\item Until nothing changes very much:
+\begin{enumerate}
+\item Using the current parameter guesses, calculate the weights $w_{ij}$ (E-step) 
+\item Using the current weights, maximize the weighted likelihood to get new parameter estimates (M-step)
+\end{enumerate}
+\item Return the final estimates for $\theta_1, \dots, \theta_K, \lambda_1,\dots,\lambda_K$ and clustering probabilities. 
+\end{enumerate}
+
+
+%\subsection{}
+
+
+
+\end{document}  

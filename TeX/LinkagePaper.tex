@@ -23,6 +23,8 @@
 %Introduction
 \section{Introduction}
 
+Referee for Belin (93): ``every gain which is achieved by a superior record linkage procedure must be justified by the cost of implementing that procedure". 
+
 Ask any economist who works with survey or administrative data how to handle imperfect matches when performing a one-to-one merge, and you will get a different answer.  Some pick the matches that they believe are most likely to be correct.  Some estimate the same model using multiple configurations of matched data.  Others avoid the issue entirely, by dropping all matches that are flagged by the automated merge processes in R and Stata.  There is no one-size-fits-all solution to the multiple match problem, nor a formal theory about how these subjective matching decisions may introduce bias or uncertainty into estimation and inference in economic models. 
 
 This ``merging" problem, defined formally as the process of joining records from multiple data sources that describe the same entity, appears in many fields, such as statistics, computer science, operations research, and epidemiology, under many names, such as record linkage, data linkage, entity resolution, instance identification, de-duplication, merge/purge processing, and reconciliation.    In econometrics, merging is commonly referred to as ``data combination", although literature notably lacking, despite the increasing availability of large administrative datasets.  %\citep{RidderMoffitt}.
@@ -36,6 +38,23 @@ The outline for this paper is as follows.  First I will review some of the exist
 
 The record linkage literature can be divided into two categories, broadly.  The first are those who develop methods to perform matches that are in some way ``optimal" -- defined by reducing false match rates, or in terms of speed.  The second, where this work will eventually fall, is studying how to incorporate uncertainty from the matching process into the subsequent analysis.  Rarely are we interested in the match itself, but the analysis produced using matched data.  
 \subsection{Methods people}
+Larsen (2005) shows how to use a hierarchical Bayesian model to allow for matching probability of agreeing on fields of information to vary by block (but share a hyperprior $(\log(\alpha_s/\alpha_s+\beta_s) \sim \mathcal{N})$.  He also shows one-to-one restrictions.  Now $n_{12}$, the number of matches is:
+\[ n_{m} \sim Binomial(n_2, p_m) \] 
+where $p_m \sim Beta(\alpha_m, \beta_m)$ as before. The prior distribution for the set of matches, is uniform over the space of possible matching configurations. Suggests doing linear sum assignment procedure at each step.  %Read Appendix B
+
+\subsection{Experimental}
+Belin (1993): Performance of record-linkage procedure can depend on a number of factors, including:
+\begin{enumerate}
+\item Choice of matching variables
+\item Choice of blocking variables
+\item Assignment of weights to agreement or disagreement on various matching variables
+\item Handling of close but not exact agreement between matching variables
+\item Handling of missing data in one or both of a pair of records
+\item Algorithm for assigning candidate matches
+\item Choice of cutoff weight above which record pairs will be declared matched
+\item The site or setting from which data are obtained
+\end{enumerate}
+In the Bayesian, case we don't need to declare anyone matched, could calculate the probability of  ``model" (match) space explored via Geweke and then use this to calculate proper weights on reviewed matches?  
 \subsection{bias people}
 Scheuren and Winkler (1993) and Lahiri and Larsen (2005) propose bias-corrected estimators of coefficients in a linear regression model given data from a probabilistically linked file. 
 
@@ -65,72 +84,62 @@ In a Bayesian approach none of this necessary maybe.
 
 Linkage model is a permutation matrix. 
 %Setup 
-\section{Setup}
+\section{Setup (Sadinle, 2017)}
+Consider two datafiles $X_1$ and $X_2$ that record information from two overlapping sets of individuals or entities.  The files originate from two record-generating processes that may induce errors and missing values, so that identifying which individuals are represented in both $X_1$ and $X_2$ is nontrivial.  I assume that individuals appear at most once in each datafile, so that the goal of record linkage is to identify which records in files $X_1$ and $X_2$ refer to the same entities.  
+
+Formally, the set of records coming from the two files can be represented as a \textit{bipartite matching}.  Suppose that files $X_1$ and $X_2$ contain $n_1$ and $n_2$ records, respectively, and without loss of generality that $n_1 \geq n_2$.  Denote also the number of entities represented in both files as $n_{12}$, so that $0 \leq n_{12} \leq n_2$. 
+
+One way to write the parameter of interest is as a \textit{matching matrix} $\Delta$ of size $n_1\times n_2$ whose $(i,j)$th entry is defined as:
+\[ \Delta_{ij} = \begin{cases} 1, & \text{if records $i\in X_1$ and $j\in X_2$ refer to the same entity;} \\ 0, & \text{otherwise} \end{cases} \]
+
+A more compact representation used by Sadinle (2017) is a \textit{matching labeling} $Z= (Z_1, Z_2,\dots, Z_{n_2})$ for the records in file $X_2$ such that
+\[ Z_j = \begin{cases} i, & \text{if records $i\in X_1$ and $j\in X_2$ refer to the same entity;} \\
+				n+1, & \text{if record $j\in X_2$ does not have a match in $X_1$} \end{cases} \]
+
+I will use either representation interchangeably throughout the paper depending on convenience. 
+
+
 
 %Need for probability weights of match -- Bo stuff here
 
 %Methods
-\section{Fellegi-Sunter Approach}
-\subsection{Mixture Models}
-Mixture models are useful for implementing the Fellegi-Sunter approach.  Following Shalizi (ref here):  
+\section{Probabilistic Record Linkage via Mixture Models}
+According to the probabilistic record linkage framework of Fellegi and Sunter (1969), the set of ordered record pairs $X_1 \times X_2$ is the union of two disjoint sets, \textit{matches} $(M)$ and \textit{non-matches} $(U)$:
+\begin{align*} M &= \{(i,j): i\in X_1, j\in X_2, \Delta_{ij}=1\} \\ U &= \{(i,j): i\in X_1, j\in X_2, \Delta_{ij}=0\}\end{align*} 
 
-We say that the distribution $f$ is a mixture of $K$ component distributions $f_1, \dots, f_K$ if 
-\[ f(x) = \sum_{k=1}^K \lambda_k f_k(x; \theta_k) \] 
-where $\lambda_k$ are the mixing weights, such that $\lambda_k>0, \ \sum_k \lambda_k = 1$.  This means that the data can generated to the following procedure: 
+A record pair $(i,j) \in X_1\times X_2$ is evaluated according to $F$ different comparison criteria, represented by the comparison vector $\gamma_{ij}= (\gamma_{ij}^1, \dots, \gamma_{ij}^f, \dots, \gamma_{ij}^F)$.  The comparison criteria may be binary, as in ``$i$ and $j$ have the same birthday", or factor variables that account for partial agreement among strings.    
+
+%More detail will be added here later if necessary. 
+
+\subsection{Mixture Models} The probability of a particular configuration of the comparison vector $\gamma_{ij}$ can be modeled as arising from a mixture distribution:
+\begin{equation}
+P(\gamma_{ij}) = P(\gamma_{ij} | M) p_M + P(\gamma_{ij} | U) p_U 
+\end{equation}
+where $P(\gamma_{ij} | M)$ and $P(\gamma_{ij} | U)$ are the probabilities of observing the pattern $\gamma$ among the matches and non-matches, respectively, and $p_M$ and $p_U = 1-p_M$ are the marginal probabilities of matches and unmatched pairs. 
+ 
+If the comparison vector fields $\gamma_{ij}^f$ are independent across $f$ conditional on match status (i.e. if errors in name and address are not correlated conditional on match status %talk about this
+then
+ $$P(\gamma_{ij} | C) = \prod_{f=1}^F P(\gamma_{ij}^f | C)^{\gamma_{ij}^f}(1-Pr(\gamma_{ij}^f | C))^{1-\gamma_{ij}^f} \hspace{20pt} C\in \{M, U\} $$
+ if the $\{\gamma_{ij}^f\}_{f=1}^F$ are binary.  %Think about whether to add Sadinle
+ Otherwise we can represent it in another way as in Sadinle (2017) but it's a pain.
+ 
+\subsection{Prior Distributions} The conditional independence assumption allows for a prior distribution on the parameters that is the product of independent Beta distributions, 
 \begin{align*}
-Z &\sim \text{Multinomial}(\lambda_1, \dots, \lambda_K) \\
-X | Z &\sim f_{Z}
-\end{align*}
-where $Z$ is a discrete random variable that says which component $X$ is drawn from. 
+p_M &\sim Beta(\alpha_M, \beta_M) \\
+P(\gamma_{k} (a,b) =1\ |\ M) &\sim Beta(\alpha_{Mk}, \beta_{Mk}), \hspace{10pt} k = 1,\dots, K \\
+P(\gamma_{k} (a,b) =1 \ |\  U) &\sim Beta(\alpha_{Uk}, \beta_{Uk}), \hspace{10pt} k = 1,\dots, K
+\end{align*} 
+ 
+Larsen (2005) notes that conditional independence across comparison vector fields may be relaxed by specifying a Dirichlet prior distribution on the whole probability vector associated with the set of comparison vectors $\gamma_{ij}$, however the dimension could be very large:
+\[ P(\gamma | C) \sim Dirichlet(\delta_C) \hspace{20pt} C\in\{M,U\}\]
 
-This is useful for record linkage using the FS approach because we assume there are two latent populations corresponding to matches $(M)$ and non-matches $(U)$, that are represented in the population of comparisons with proportions $p_M$ and $p_U = 1 - p_M$ respectively.  
+Alternatively, ``training data" could inform the priors (Belin and Rubin). %look this up
+ 
+\subsection{Estimation via Gibbs Sampling} 
 
+Mixture models typically use EM algorithm but here it's not necessary.  Gibbs Sampler here. 
 
-Given $(i,j) \in M$ or $ (i,j)\in U$, the comparison vector between two files $i$ and $j$ is
-\[ \gamma(i,j) \sim f_{k}, \hspace{10pt} k\in\{M,U\} \]
-
-
-Assuming independent samples, the log likelihood for a generic mixture model for observations $(x_1,\dots, x_n)$ is:
-\begin{align} 
-\ell(\theta) &= \sum_{i=1}^n \log f(x_i,\theta)  \\
-		&= \sum_{i=1}^n \log \sum_{k=1}^K \lambda_k f_k(x_i; \theta_k)  \label{eq:llh}
-\end{align}
-The overall parameter vector of the model is thus $\theta = (\lambda_1,\dots,\lambda_{K-1}, \theta_1, \theta_2, \dots, \theta_K)$.  
-
-In record linkage, $x_i \overset{i.i.d.}{\sim}X$ and $y_j  \overset{i.i.d.}{\sim} Y$, so $\gamma(x_i, y_j) \independent \gamma(x_{i'}, y_j)$ for all  $j, i'\neq i$, yet, $\gamma(x_i,y_j) $ may not be independent from $\gamma(x_i,y_{j'})$.  This gives the likelihood:
-
-%\[ likelihood here \] 
-
-\begin{equation} \ell(\theta) \end{equation}
-\subsection{Mixture Model Estimation}
-As shown in Shalizi (ref), maximizing the likelihood for a mixture model is like doing a weighted likelihood maximization, where the weight of each observation $x_i$ depends on the cluster.  This is seen by taking the derivative of \eqref{eq:llh} with respect to one parameter $\theta_j$,
-
-\begin{align*}
-\frac{\partial \ell}{\partial \theta_j} &= \sum_{i=1}^n \frac{1}{\sum_{k=1}^K\lambda_k f_k(x_i; \theta_k)} \lambda_j \frac{\partial f_j(x_i;\theta_j)}{\partial \theta_j} \\
-&= \sum_{i=1}^n \underbrace{\frac{\lambda_j f_j(x_i;\theta_j)}{\sum_{k=1}^K\lambda_k f_k(x_i; \theta_k)}}_{w_{ij}}  \frac{\partial \log f_j(x_i;\theta_j)}{\partial \theta_j} 
-\end{align*}
-
-The weight is the conditional probability that observation $i$ belongs to cluster $j$ :
-
-\[w_{ij} = \frac{\lambda_j f_j(x_i;\theta_j)}{\sum_{k=1}^K\lambda_k f_k(x_i; \theta_k)} = \frac{P(Z=j, X=x_i)}{P(X=x_i)}= P(Z=j | X=x_i)\] 
-
-So if we try to estimate the mixture model, we're doing weighted maximum likelihood, with weights given by the posterior cluster probabilities (which depend on parameters $\lambda_1,\dots,\lambda_K$ that we are trying to estimate).  The EM algorithm (ref here for Rubin, etc.) makes estimation possible: 
-\begin{enumerate}
-\item Start with guesses about the mixture components $\theta_1, \theta_2, \dots, \theta_K$ and the mixing weights $\lambda_1,\dots,\lambda_K$. 
-\item Until nothing changes very much:
-\begin{enumerate}
-\item Using the current parameter guesses, calculate the weights $w_{ij}$ (E-step) 
-\item Using the current weights, maximize the weighted likelihood to get new parameter estimates (M-step)
-\end{enumerate}
-\item Return the final estimates for $\theta_1, \dots, \theta_K, \lambda_1,\dots,\lambda_K$ and clustering probabilities. 
-\end{enumerate}
-
-\subsection{Specifying mixture distributions}
-
-The mixture distributions $f_k(x_i,\theta_k)$ need not be the same parametric family, nor do they even need be parametric.  But in principal the different density mixtures could be any probabilistic model.  
-
-In the FS approach, agreement fields are conditionally independent. Makes sense to specify via Beta distributions.  But could also specify a dirichlet distribution for each part...? 
-
+\subsection{Restrictions on Parameters}
 \subsection{Enforcing one-to-one assignment}
 
 The FS decision rule does not enforce the maximum one-to-one assignment that is desirable in many economic applications.  In practice, the optimal assignment of record pairs is obtained by solving the linear sum assignment problem: 
@@ -158,6 +167,9 @@ Uncertainty over assignments expressed as:
 \[ P(\pi | \theta)  = \frac{1}{Z(\theta)} \exp(-E(\pi,\theta))\]
 %\subsection{}
 
+
+\section{Priors} 
+It is expected that the probability of agreeing on an individual field of comparison is higher for matches than for non-matches is $P(\gamma_k(a,b) = 1 | (a,b) \in M) > P (\gamma_k(a, b) = 1 | (a,b) \in U) $.  And the probability of a match $p_M$ is less than or equal to the minimum file size divided by the number of possible pairs.  
 
 
 %Data discription
