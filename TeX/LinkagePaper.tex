@@ -21,6 +21,11 @@
 \maketitle
 
 %Introduction
+
+\section{New stuff}
+
+One option is to use training data to obtain the weights.  Another is to apply mixture models to the comparison vectors directly.  This latter method is favorable because in many contexts training data is not available, or creating a sufficiently large, representative training data set is costly.  
+
 \section{Introduction}
 
 Referee for Belin (93): ``every gain which is achieved by a superior record linkage procedure must be justified by the cost of implementing that procedure". 
@@ -31,9 +36,11 @@ This ``merging" problem, defined formally as the process of joining records from
 
 There are now many solutions to the record linkage problem, and yet little understanding of how these techniques may introduce sample selection bias, and how researchers should handle these issues in practice.  Examining Bayesian record linkage tools is a promising place to start, as they provide posterior probabilities over a match (are they consistent?).  This is the problem that was introduced by Bo Honore (need a consistent probability of the match to ensure consistency of estimators).  These weights can then be used to perform the analysis using standard econometric models. 
 
-The outline for this paper is as follows.  First I will review some of the existing Bayesian techniques for record linkage, especially those from Larsen and Rubin (2001), Sadinle (2017), and  Enamorado (2018).  Then I will explore how to incorporate those weights in practice.  
+The outline for this paper is as follows.  First I will implement the Bayesian record linkage procedures from Larsen and Rubin (2001) and Sadinle (2017) to obtain a posterior distribution over the bipartite matching/sets of matches vs. non-matches.
 
-%Some literature
+Once I have implemented that I will use techniques from Larsen and Lahiri (2005) and Liseo/Tancredi (2015) about how to propagate uncertainty from the matches into a basic regression analysis.   
+
+% Some literature
 \section{Literature}
 
 The record linkage literature can be divided into two categories, broadly.  The first are those who develop methods to perform matches that are in some way ``optimal" -- defined by reducing false match rates, or in terms of speed.  The second, where this work will eventually fall, is studying how to incorporate uncertainty from the matching process into the subsequent analysis.  Rarely are we interested in the match itself, but the analysis produced using matched data.  
@@ -182,6 +189,24 @@ The techniques are tested first using a synthetic data generator developed by Ch
 \end{enumerate}
 %(CHECK THIS ETC) To be written. 
 
+
+\section{Simulations}
+Description of the fake data.  
+\subsection{Sadinle (2017) Stuff}
+What this section will include:
+\begin{enumerate}
+\item Have plots for posterior of all M and U probabilities as produced by Sadinle procedure.  Put on same graph? 
+\item Posterior probability of matches? Try doing geweke? 
+\item Plot of likelihood to show convergence
+\end{enumerate}
+
+Files will look like 
+\begin{enumerate}
+\item For each data set, generates chain of bipartite matches Z, parameters for M and U probabilities, and writes these to files
+\item File that analyzes $Z$ draws and gives posterior probability for pct correct, pct match, etc. across draws.  Can also look at individual matches (will be useful for comparing the two methods)
+\item File that produces posterior distributions for $m$ and $u$ probabilities. 
+\item Plot the likelihood to examine convergence properties.  
+\end{enumerate}
 
 
 
