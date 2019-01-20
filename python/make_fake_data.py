@@ -18,15 +18,19 @@ def make_fake_data(n1, n2, pM, pML, pUL, randState = 113):
         iVals += x
     jVals = [j for j in range(n1)] * n2
 
-    # make true link column
-    true_links = pd.DataFrame(links)
-    true_links[['iTrue','jTrue']] = temp.apply(pd.Series)
-    true_links = true_links[['iTrue','jTrue']]
-
     Gamma = pd.DataFrame(
         {'gamma': list(gamma[['c_1','c_2','c_3']].values),
         'i': iVals,
         'j': jVals,
         'match': matches})
     Gamma = Gamma.reset_index(drop=True)
+    ext = 'nMatch' + str(int(pM*nPair)) + '_L' + str(L)
+    Gamma.to_csv('Gamma_'+ext+'.csv', mode='w')
     return Gamma
+
+if __name__ == "__main__":
+    n1 = n2 = 10
+    pML = [.8] * 4
+    pUL = [.2] * 4
+    pM = .2
+    make_fake_data(n1, n2, pM, pML, pUL)

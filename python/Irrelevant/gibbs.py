@@ -4,25 +4,9 @@ import itertools
 import pandas as pd
 from scipy.stats import binom
 from recordlinkage import datasets
-import make_fake_data as dm
-import json
 import time
 import sys
 
-def make_Gamma(n1, n2, pM, pML, pUL):
-    nPair = n1 * n2
-    L = len(pML)
-    gamma=np.array(datasets.binary_vectors(nPair, int(pM*nPair), m=pML, u = pUL, random_state=113))
-    i = [[i]*n1 for i in range(n2)]
-    iVals = []
-    for x in i:
-        iVals += x
-    jVals = [j for j in range(n1)] * n2
-    Gamma = pd.DataFrame(
-        {'gamma': [list(gamma[i]) for i in range(len(gamma))],
-        'i': iVals,
-        'j': jVals})
-    return Gamma
 
 def make_Z_init(n1,n2):
     Z = [n1 + i for i in range(n2)]
@@ -31,8 +15,6 @@ def make_Z_init(n1,n2):
     for i,x2 in enumerate(matchX2):
         Z[x2] = matchX1[i]
     return Z
-
-
 
 # function for making prior
 def make_prior(init, hypers,L):
@@ -428,35 +410,3 @@ def gibbs(Gamma, iters, init, hypers, Z_init, n1, n2):
     pUL_names = ['pUL_' + str(i) for i in range(1,L+1)]
     trace.columns= ['pM'] + pML_names + pUL_names + ['llh']
     return trace, Z_trace
-
-def main():
-    niters = int(sys.argv[2])
-    assert niters > 0, 'need positive niters'
-    assert len(Z_init) > 0, 'invalid param'
-
-    check_valid_prior(init)
-    start = time.time()
-    trace, Z_trace = gibbs(Gamma, niters, init, hypers, Z_init, n1, n2)
-    end = time.time()
-    print(end-start)
-    zName, traceName = make_file_names(Gamma.shape[0], L)
-    Z_trace.to_csv(zName+'.csv', mode='w')
-    trace.to_csv(traceName+'.csv', mode='w')
-
-if __name__ == "__main__":
-    filename = sys.argv[1]
-    with open(filename, 'r') as f:
-        params = json.load(f)
-
-    L= params['L']
-    init = params['init']
-    hypers = params['hypers']
-    n1 = params['n1']
-    n2 = params['n2']
-    pML = params['pML']
-    pUL = params['pUL']
-    pM = params['pM']
-
-    Gamma = dm.make_fake_data(n1,n2,pM,pML,pUL)
-    Z_init = make_Z_init(n1,n2)
-    main()
